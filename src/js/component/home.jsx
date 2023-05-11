@@ -1,18 +1,50 @@
 import React, { useState, useEffect } from "react";
 
+const ApiUrl = "https://assets.breatheco.de/apis/fake/todos/user/jsilva";
+
 const Home = () => {
   const [inputValue, setInputValue] = useState("");
   const [todos, setTodos] = useState([]);
 
-  const removeItem = (taskId) => {
+  const fetchTodos = () => {
+    fetch(ApiUrl)
+      .then((r) => r.json())
+      .then((data) => setTodos(data));
+  };
+
+  const addTodo = (label) => {
+    const newTodos = [...todos, { label, done: false }];
+    setTodos(newTodos);
+    saveTodos(newTodos);
+  };
+
+  const removeTodo = (taskId) => {
     const newTodos = todos.filter((t, index) => index !== taskId);
     setTodos(newTodos);
+    saveTodos(newTodos);
+  };
+
+  const saveTodos = (todos) => {
+    fetch(ApiUrl, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(todos),
+    })
+      .then((r) => r.json())
+      .then((data) => console.log("Todos saved:", data))
+      .catch((error) => console.error("Error saving todos:", error));
+  };
+
+  const clearTodos = () => {
+    fetch(ApiUrl, { method: "DELETE" })
+      .then(() => setTodos([]))
+      .catch((error) => console.error("Error clearing todos:", error));
   };
 
   useEffect(() => {
-    fetch("https://assets.breatheco.de/apis/fake/todos/user/jsilva")
-      .then((r) => r.json())
-      .then((data) => setTodos(data));
+    fetchTodos();
   }, []);
 
   return (
@@ -26,7 +58,7 @@ const Home = () => {
             value={inputValue}
             onKeyDown={(e) => {
               if (e.key === "Enter" && inputValue.trim() !== "") {
-                setTodos([...todos, inputValue.trim()]);
+                addTodo(inputValue.trim());
                 setInputValue("");
               }
             }}
@@ -41,13 +73,22 @@ const Home = () => {
               className="btn-close"
               aria-label="Close"
               onClick={(e) => {
-                removeItem(index);
+                removeTodo(index);
               }}
             ></button>
           </li>
         ))}
         <div className="text-muted"><small>{todos.length} items</small></div>
       </ul>
+      <div className="d-grid gap-2 my-3">
+        <button
+          type="button"
+          className="btn btn-danger"
+          onClick={clearTodos}
+        >
+          Clear all
+        </button>
+      </div>
     </div>
   );
 };
